@@ -1,0 +1,18 @@
+imageio==2.4.0
+gym
+gym-minigrid
+pygame
+pyvirtualdisplay
+piglet
+gym
+PyOpenGL
+
+# pip install -U --no-cache-dir gdown --pre
+# brew install --cask xquartz
+# brew install ffmpeg
+# export PATH=$PATH:/opt/X11/bin
+
+
+# not needed:
+# freeglut3-dev
+# 
