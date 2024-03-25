@@ -1308,7 +1308,7 @@ class MiniGridEnv(gym.Env):
     def step(self, action):
         self.step_count += 1
 
-        reward = 0
+        reward = -0.01
         terminated = False
         truncated = False
 
