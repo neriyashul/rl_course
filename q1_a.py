@@ -13,7 +13,7 @@ class QTable:
         the range that the state values might occupy and assignaction_values
         each region to a bucket.
         '''
-        return self.q_table[state]
+        return self.q_table[*state]
     def __setitem__(self, key, value):
         state, action = key
         self.q_table[*state, action] = value
@@ -80,7 +80,8 @@ class MiniGridSolver:
                     print("in explore")
 
             # Run simulation step
-            _, reward, done, truncated, _ = self.env.step(action)
+            _, orig_reward, done, truncated, _ = self.env.step(action)
+            reward = self.calculate_reward(orig_reward)
 
             # Have we reached the goal position (have we won?)?
             if done:
@@ -100,6 +101,12 @@ class MiniGridSolver:
 
         return success, steps, episode_reward
 
+    def calculate_reward(self, reward):
+        if reward > 0:
+            return reward
+        step_cost = -0.01
+        return  step_cost
+    
     def train(self):
         success = False
         success_count = 0
