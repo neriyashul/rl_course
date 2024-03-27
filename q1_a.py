@@ -3,8 +3,8 @@ import numpy as np
 from environment import KeyFlatObsWrapper, RandomEmptyEnv_10, embed_mp4
 
 class QTable:
-    def __init__(self, width, height, num_of_directions, goal_options, num_of_actions):
-        self.q_table = np.random.uniform(low=-0.0001, high=0, size=[width, height, num_of_directions, goal_options, num_of_actions])
+    def __init__(self, *args):
+        self.q_table = np.random.uniform(low=-0.0001, high=0, size=[*args])
 
     def __getitem__(self, state):
         '''
