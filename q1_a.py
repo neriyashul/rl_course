@@ -54,7 +54,8 @@ class MiniGridSolver:
         self.epsilon_change = self.epsilon/(MiniGridSolver.END_EPSILON_DECAYING - MiniGridSolver.START_EPSILON_DECAYING)
         self.num_of_actions = self.env.action_space.n
         self.num_of_directions = 4
-        self.q_table = QTable(self.width, self.height, self.num_of_directions, 3, self.num_of_actions)
+        goal_options = 3
+        self.q_table = QTable(self.width, self.height, self.num_of_directions, goal_options, self.num_of_actions)
 
 
     def _run_game(self):
