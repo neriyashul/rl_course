@@ -102,6 +102,7 @@ class MiniGridSolver:
         return success, steps, episode_reward
 
     def calculate_reward(self, reward):
+        # TODO: move this to the environment
         if reward > 0:
             return reward
         step_cost = -0.01
