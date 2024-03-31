@@ -21,10 +21,10 @@ class QTable:
         the range that the state values might occupy and assignaction_values
         each region to a bucket.
         '''
-        return self.q_table[*state]
+        return self.q_table[tuple(state)]
     def __setitem__(self, key, value):
         state, action = key
-        self.q_table[*state, action] = value
+        self.q_table[tuple(state) + (action,)] = value
     
 
 def get_state(env):
@@ -186,7 +186,9 @@ class MiniGridSolver:
             self.is_grabbed_key = False
             self.is_cur_open = False
             success, steps, episode_reward = self._run_game()
-            print(f"Current episode: {episode+1}, Steps: {steps}, q-table sum: {np.sum(self.q_table.q_table)}, episode_rewards: {episode_reward}, min: {np.min(self.q_table.q_table)}, max: {np.max(self.q_table.q_table)}, epsilon: {self.epsilon}")
+            if episode % 300 == 0:
+                print(f"Current episode: {episode+1}, Steps: {steps}, q-table sum: {np.sum(self.q_table.q_table)}, episode_rewards: {episode_reward}, min: {np.min(self.q_table.q_table)}, max: {np.max(self.q_table.q_table)}, epsilon: {self.epsilon}")
+
             episode_rewards.append(episode_reward)
             episode_steps.append(steps)
             # Count successes

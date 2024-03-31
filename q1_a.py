@@ -13,11 +13,10 @@ class QTable:
         the range that the state values might occupy and assignaction_values
         each region to a bucket.
         '''
-        return self.q_table[*state]
+        return self.q_table[tuple(state)]
     def __setitem__(self, key, value):
         state, action = key
-        self.q_table[*state, action] = value
-    
+        self.q_table[tuple(state) + (action,)] = value
 
 def get_state(env, goal_options=[(1,8),(8,8), (8,1)]):
     '''
@@ -127,7 +126,7 @@ class MiniGridSolver:
                 self.epsilon = max(0, self.epsilon - self.epsilon_change)
                 
     def create_video(self, video_filename):
-        iter= 0
+        iter = 0
         done = False
         print("creating video...")
         self.env.reset()
@@ -135,7 +134,7 @@ class MiniGridSolver:
             while not done:
                 state = get_state(self.env)
                 action = np.argmax(self.q_table[state])
-                iter +=1
+                iter += 1
                 _, reward, done, truncated, _ = self.env.step(action)
                 if done or truncated:
                     done = True
