@@ -44,23 +44,18 @@ def get_state(env):
     
     return (agent_x-1, agent_y-1, direction, carring_key, key_x-1, key_y-1, door_y-1, is_door_open)
 
-class MiniGridSolver:
+class MiniGridKeySolver:
     LEARNING_RATE = 0.2
     DISCOUNT = 0.99
     EPISODES = 30000
     SHOW_EVERY = 10
-    
     INITIAL_EPSILON = 1.
-    
-    START_DECAYING = EPISODES // 10
-    DECAY_RATE = 1/(EPISODES-START_DECAYING)
-    
+
     # DECAY_RATE = -0.0005
     # epsilon = math.exp(MiniGridSolver.DECAY_RATE * episode)
     ACTIONS_MAP = {0: 0, 1: 1, 2: 2, 3: 3, 4: 5, 5:5}
 
-    
-    def __init__(self, env):
+    def __init__(self, env, learning_rate=LEARNING_RATE, discount=DISCOUNT, episodes=EPISODES):
         # random.seed(42)
         self.env = env
         self.env.reset()
@@ -71,14 +66,20 @@ class MiniGridSolver:
         self.is_grabbed_key = False
         self.height = self.env.height - 2 # without the border
         self.width = self.env.width - 2 # without the border
-        self.epsilon = MiniGridSolver.INITIAL_EPSILON
+        self.epsilon = MiniGridKeySolver.INITIAL_EPSILON
+
+        self.learning_rate = learning_rate
+        self.discount = discount
+        self.episodes = episodes
+
+        self.start_decaying = self.episodes // 10
+        self.decay_rate = 1 / (self.episodes - self.start_decaying)
         # print(MiniGridSolver.END_EPISODE_DECAYING)
         
         # self.epsilon_change = self.epsilon/(MiniGridSolver.END_EPISODE_DECAYING - MiniGridSolver.START_EPSISODE_DECAYING)
         self.num_of_actions = 5 # return 7 actions that 2 actions are not possible
         self.num_of_directions = 4
         print(f"Number of actions: {self.num_of_actions}")
-        
 
 
         holding_key_options = 2
@@ -89,6 +90,13 @@ class MiniGridSolver:
         self.q_table = QTable(self.width, self.height, self.num_of_directions, holding_key_options, 
                               key_x_options, key_y_options, door_y_options, door_open_options, self.num_of_actions)
 
+    def plot_episode_rewards(self):
+        averages = [sum(self.episode_rewards[i:i + 30]) / 30 for i in range(0, len(self.episode_rewards), 30)]
+        plt.plot(range(len(averages)), averages)
+        plt.xlabel('Episode (average of 30 episodes)')
+        plt.ylabel('Rewards')
+        plt.title('Episode Rewards Progress')
+        plt.show()
 
     def get_step(self, state, epsilon_greedy=True):
         # Exploit - use the q-table
@@ -112,7 +120,7 @@ class MiniGridSolver:
             action = self.get_step(state)
             
             # Run simulation step
-            _, orig_reward, done, truncated, _ = self.env.step(MiniGridSolver.ACTIONS_MAP[action])
+            _, orig_reward, done, truncated, _ = self.env.step(MiniGridKeySolver.ACTIONS_MAP[action])
             reward = self.calculate_reward(orig_reward)
 
             # Have we reached the goal position (have we won?)?
@@ -124,7 +132,7 @@ class MiniGridSolver:
             new_state = get_state(self.env)
             max_future_q = np.max(self.q_table[new_state])
             current_q = self.q_table[state][action]
-            new_q = (1 - MiniGridSolver.LEARNING_RATE) * current_q + MiniGridSolver.LEARNING_RATE * (reward + MiniGridSolver.DISCOUNT * max_future_q)
+            new_q = (1 - self.learning_rate) * current_q + self.learning_rate * (reward + self.discount * max_future_q)
             self.q_table[state, action] = new_q
             episode_reward += reward
             state = new_state
@@ -144,7 +152,7 @@ class MiniGridSolver:
             return reward*300000
         
         if x_pos > 2:
-            print("pass the wall")
+            # print("pass the wall")
             return -0.01
         
         if self.env.is_door_open():
@@ -164,24 +172,24 @@ class MiniGridSolver:
         # if new_closing_of_door:
         #     self.is_cur_open = False
         #     return -0.59
-        
+
         # if not self.is_grabbed_key and self.env.is_carrying_key():
         #     self.is_grabbed_key = True
         #     return 0.5
         # elif self.is_grabbed_key and not self.env.is_carrying_key():
         #     self.is_grabbed_key = False
         #     return -0.59
-        
+
         # return  step_cost
 
     def train(self):
         success = False
         success_count = 0
         steps = 0
-        episode_rewards = []
-        episode_steps = []
-        
-        for episode in range(MiniGridSolver.EPISODES):
+        self.episode_rewards = []
+        self.episode_steps = []
+
+        for episode in range(self.episodes):
             self.is_already_open = False
             self.is_grabbed_key = False
             self.is_cur_open = False
@@ -189,8 +197,8 @@ class MiniGridSolver:
             if episode % 300 == 0:
                 print(f"Current episode: {episode+1}, Steps: {steps}, q-table sum: {np.sum(self.q_table.q_table)}, episode_rewards: {episode_reward}, min: {np.min(self.q_table.q_table)}, max: {np.max(self.q_table.q_table)}, epsilon: {self.epsilon}")
 
-            episode_rewards.append(episode_reward)
-            episode_steps.append(steps)
+            self.episode_rewards.append(episode_reward)
+            self.episode_steps.append(steps)
             # Count successes
             if success:
                 success_count += 1
@@ -198,10 +206,8 @@ class MiniGridSolver:
             # if MiniGridSolver.END_EPISODE_DECAYING >= episode >= MiniGridSolver.START_EPSISODE_DECAYING:
                 # self.epsilon = max(0, self.epsilon - self.epsilon_change)
             # self.epsilon = math.exp(MiniGridSolver.DECAY_RATE * episode)    
-            if episode > MiniGridSolver.START_DECAYING:
-                self.epsilon = max(0, self.epsilon - MiniGridSolver.DECAY_RATE)
-        
-                
+            if episode > self.start_decaying:
+                self.epsilon = max(0, self.epsilon - self.decay_rate)
     def create_video(self, video_filename):
         iter= 0
         done = False
@@ -210,24 +216,24 @@ class MiniGridSolver:
         with imageio.get_writer(video_filename, fps=10) as video:
             while not done:
                 state = get_state(self.env)
-                action = game.get_step(state, False)
+                action = self.get_step(state, False)
                 # print(f'state:{state} Qtable values: {self.q_table[state]}')
                 iter +=1
-                _, reward, done, truncated, _ = self.env.step(MiniGridSolver.ACTIONS_MAP[action])
+                _, reward, done, truncated, _ = self.env.step(MiniGridKeySolver.ACTIONS_MAP[action])
                 if done or truncated:
                     done = True
                 video.append_data(self.env.render(mode='rgb_array'))
 
         embed_mp4(video_filename)
-    
+
     def create_image(self):
         screen = env.render()
         plt.imshow(screen)
 
 
-env = KeyFlatObsWrapper(RandomKeyMEnv_10(render_mode='rgb_array'))
-game = MiniGridSolver(env)
-game.train()
-game.create_video('imageio1.mp4')
-game.create_video('imageio2.mp4')
-game.create_video('imageio3.mp4')
+# env = KeyFlatObsWrapper(RandomKeyMEnv_10(render_mode='rgb_array'))
+# game = MiniGridKeySolver(env)
+# game.train()
+# game.create_video('imageio1.mp4')
+# game.create_video('imageio2.mp4')
+# game.create_video('imageio3.mp4')

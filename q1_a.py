@@ -38,9 +38,14 @@ class MiniGridSolver:
     EPISODES = 2000
     SHOW_EVERY = 10
     START_EPSILON_DECAYING = 0.2
-    END_EPSILON_DECAYING = EPISODES // 10
-    def __init__(self, env):
+    def __init__(self, env, learning_rate = LEARNING_RATE, discount = DISCOUNT, episodes = EPISODES):
         # np.random.seed(42)
+        self.learning_rate = learning_rate
+        self.discount = discount
+        self.episodes = episodes
+        self.start_epsilon_decaying = 0.2
+        self.end_epsilon_decaying = self.episodes // 10
+
         self.env = env
         self.env.reset()
         self.action_space = env.action_space
@@ -49,8 +54,8 @@ class MiniGridSolver:
         self.height = self.env.height - 2 # without the border
         self.width = self.env.width - 2 # without the border
         self.epsilon = 1
-        print(MiniGridSolver.END_EPSILON_DECAYING)
-        self.epsilon_change = self.epsilon/(MiniGridSolver.END_EPSILON_DECAYING - MiniGridSolver.START_EPSILON_DECAYING)
+        print(self.end_epsilon_decaying)
+        self.epsilon_change = self.epsilon/(self.end_epsilon_decaying - MiniGridSolver.START_EPSILON_DECAYING)
         self.num_of_actions = self.env.action_space.n
         self.num_of_directions = 4
         goal_options = 3
@@ -91,7 +96,7 @@ class MiniGridSolver:
             new_state = get_state(self.env)
             max_future_q = np.max(self.q_table[new_state])
             current_q = self.q_table[state][action]
-            new_q = (1 - MiniGridSolver.LEARNING_RATE) * current_q + MiniGridSolver.LEARNING_RATE * (reward + MiniGridSolver.DISCOUNT * max_future_q)
+            new_q = (1 - self.learning_rate) * current_q + self.learning_rate * (reward + self.discount * max_future_q)
             self.q_table[state, action] = new_q
             episode_reward += reward
             state = new_state
@@ -113,7 +118,7 @@ class MiniGridSolver:
         steps = 0
         episode_rewards = []
         episode_steps = []
-        for episode in range(MiniGridSolver.EPISODES):
+        for episode in range(self.episodes):
             success, steps, episode_reward = self._run_game()
             print(f"Current episode: {episode+1}, Steps: {steps}, q-table sum: {np.sum(self.q_table.q_table)}, episode_rewards: {episode_reward}, min: {np.min(self.q_table.q_table)}")
             episode_rewards.append(episode_reward)
@@ -122,7 +127,7 @@ class MiniGridSolver:
             if success:
                 success_count += 1
             # Move epsilon towards its ending value, if it still needs to move
-            if MiniGridSolver.END_EPSILON_DECAYING >= episode >= MiniGridSolver.START_EPSILON_DECAYING:
+            if self.end_epsilon_decaying >= episode >= MiniGridSolver.START_EPSILON_DECAYING:
                 self.epsilon = max(0, self.epsilon - self.epsilon_change)
                 
     def create_video(self, video_filename):
