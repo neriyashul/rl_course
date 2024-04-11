@@ -1,6 +1,13 @@
 import imageio
+from matplotlib import pyplot as plt
 import numpy as np
 from environment import KeyFlatObsWrapper, RandomEmptyEnv_10, embed_mp4
+
+
+all_rewards = []
+all_steps = []
+step_cost = -0.0001
+
 
 class QTable:
     def __init__(self, *args):
@@ -33,18 +40,13 @@ def get_state(env, goal_options=[(1,8),(8,8), (8,1)]):
     return (agent_x-1, agent_y-1, direction, reduced_goal_loc)
 
 class MiniGridSolver:
-    LEARNING_RATE = 0.1
-    DISCOUNT = 0.95
-    EPISODES = 2000
-    SHOW_EVERY = 10
-    START_EPSILON_DECAYING = 0.2
-    def __init__(self, env, learning_rate = LEARNING_RATE, discount = DISCOUNT, episodes = EPISODES):
+    def __init__(self, env, learning_rate = 0.1, discount = 0.95, episodes = 2000, start_epsilon_decaying = 0.2, end_epsilon_decaying = 0.8):
         # np.random.seed(42)
         self.learning_rate = learning_rate
         self.discount = discount
         self.episodes = episodes
-        self.start_epsilon_decaying = 0.2
-        self.end_epsilon_decaying = self.episodes // 10
+        self.start_epsilon_decaying = start_epsilon_decaying
+        self.end_epsilon_decaying = end_epsilon_decaying
 
         self.env = env
         self.env.reset()
@@ -55,7 +57,7 @@ class MiniGridSolver:
         self.width = self.env.width - 2 # without the border
         self.epsilon = 1
         print(self.end_epsilon_decaying)
-        self.epsilon_change = self.epsilon/(self.end_epsilon_decaying - MiniGridSolver.START_EPSILON_DECAYING)
+        self.epsilon_change = self.epsilon/(self.end_epsilon_decaying - self.start_epsilon_decaying)
         self.num_of_actions = self.env.action_space.n
         self.num_of_directions = 4
         goal_options = 3
@@ -107,29 +109,45 @@ class MiniGridSolver:
 
     def calculate_reward(self, reward):
         # TODO: move this to the environment
+        global step_cost
         if reward > 0:
             return reward
-        step_cost = -0.01
+        step_cost = -0.0001
         return  step_cost
     
     def train(self):
         success = False
         success_count = 0
         steps = 0
-        episode_rewards = []
-        episode_steps = []
+        self.episode_rewards = []
+        self.episode_steps = []
         for episode in range(self.episodes):
             success, steps, episode_reward = self._run_game()
             print(f"Current episode: {episode+1}, Steps: {steps}, q-table sum: {np.sum(self.q_table.q_table)}, episode_rewards: {episode_reward}, min: {np.min(self.q_table.q_table)}")
-            episode_rewards.append(episode_reward)
-            episode_steps.append(steps)
+            self.episode_rewards.append(episode_reward)
+            self.episode_steps.append(steps)
             # Count successes
             if success:
                 success_count += 1
             # Move epsilon towards its ending value, if it still needs to move
-            if self.end_epsilon_decaying >= episode >= MiniGridSolver.START_EPSILON_DECAYING:
+            if self.end_epsilon_decaying >= episode >= self.start_epsilon_decaying:
                 self.epsilon = max(0, self.epsilon - self.epsilon_change)
                 
+    
+    
+    def plot_step(self):
+        # averages = [sum(self.episode_steps[i:i + 10]) / 10 for i in range(0, len(self.episode_steps), 10)]
+        # averages = [sum(self.episode_steps[i:i + 10]) / 10 for i in range(0, len(self.episode_steps), 10)]
+        # plt.plot(range(len(averages)), averages)
+        # plt.xlabel('Episode (average of 10 episodes)')
+
+        plt.plot(range(len(self.episode_steps)), self.episode_steps)
+        
+        plt.xlabel('Episode')
+        plt.ylabel('Steps')
+        plt.title('Episode Steps Progress')
+        plt.show()
+
     def create_video(self, video_filename):
         iter = 0
         done = False
@@ -148,7 +166,57 @@ class MiniGridSolver:
         embed_mp4(video_filename)
 
 
-env = KeyFlatObsWrapper(RandomEmptyEnv_10 (render_mode='rgb_array'))
-game = MiniGridSolver(env)
-game.train()
-game.create_video('imageio.mp4')
+def plot_episode_rewards():
+    # averages = [sum(self.episode_rewards[i:i + 10]) / 10 for i in range(0, len(self.episode_rewards), 10)]
+    
+    plt.plot(range(len(averages)), averages)
+    plt.xlabel('Episode (average of 10 episodes)')
+    plt.ylabel('Rewards')
+    plt.title('Episode Rewards Progress')
+    plt.show()
+
+
+LEARNING_RATE = 0.01
+DISCOUNT = 0.9
+EPISODES = 2000
+START_EPSILON_DECAYING = int(0.2 * EPISODES)
+END_EPSILON_DECAYING  = EPISODES - (EPISODES // 10)
+
+dfactors = [0.99, 0.9, 0.8]
+
+for df in dfactors:
+    
+    env = KeyFlatObsWrapper(RandomEmptyEnv_10 (render_mode='rgb_array'))
+    game = MiniGridSolver(env, LEARNING_RATE, DISCOUNT, EPISODES, START_EPSILON_DECAYING, END_EPSILON_DECAYING)
+    game.train()
+    all_rewards.append([sum(game.episode_rewards[i:i + 10]) / 10 for i in range(0, len(game.episode_rewards), 10)])
+    all_steps.append([sum(game.episode_steps[i:i + 10]) / 10 for i in range(0, len(game.episode_steps), 10)])
+    # game.plot_step()
+    # game.create_video('imageio.mp4')
+    
+
+
+# show rewards
+plt.xlabel('Episode')
+plt.ylabel('Rewards (average of 10 episodes)')
+plt.title('Rewards per episode with different discount factor')
+for step_cost, steps in zip(dfactors, all_rewards):
+    plt.plot(range(0, len(steps)*10, 10), steps, label=f"Discount factor={step_cost}")    
+plt.legend()  # This displays the legend
+# plt.show()
+plt.savefig('reward per discount factor.png')
+
+
+plt.show()
+
+# show steps
+plt.xlabel('Episode')
+plt.ylabel('Steps (average of 10 episodes)')
+plt.title('Steps per episode with different discount factor')
+for step_cost, steps in zip(dfactors, all_steps):
+    plt.plot(range(0, len(steps)*10, 10), steps, label=f"Discount factor={step_cost}")
+plt.legend()  # This displays the legend
+# plt.show()
+plt.savefig('steps per discount factor.png')
+plt.show()
+
