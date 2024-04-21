@@ -1,0 +1,18 @@
+
+
+Part A - Tabular Methods:
+Our notebook (URL: https://colab.research.google.com/drive/1UKTHpBxtkUK3Dv4M11kCR_iy4dFXAg0T?usp=sharing ) contains:
+1. Implementation for both the empty environment and key environment
+2. Training
+3. Learning curves
+4. Videos from training
+5. Calculation of average amount of steps.
+
+
+Part B - Deep RL:
+For this part we used the following notebooks. Each contain implementation for a certain method, training, learning curves, videos and calculation of average amount of steps.
+
+1. Key env with *DQN* (URL: https://colab.research.google.com/drive/19LQNfy5Ppjh03R0NbshxZCnYoIzZ0z6M#scrollTo=DQAi6Y1DAc2O)
+2. Empty env with *Reinforce* (URL: https://colab.research.google.com/drive/1XQ3xD0pzNH2YiklwxcJEN8gCVu7WBEiM#scrollTo=z7HRy-cSkv4Q)
+3. Empty env with *Actor-Critique* (URL: )
+
